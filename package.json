@@ -1,0 +1,28 @@
+{
+    "name": "@presource/react",
+    "version": "1.0.2",
+    "description": "React utility",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "files": [
+        "src"
+    ],
+    "scripts": {
+        "test": "vitest run --coverage",
+        "typecheck": "tsc --noEmit",
+        "release": "vite-node ../../../scripts/publish-safe.ts"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org"
+    },
+    "author": "NQQT",
+    "license": "ISC",
+    "dependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.0",
+        "@presource/core": "^1.0.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    }
+}
