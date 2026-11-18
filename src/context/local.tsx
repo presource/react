@@ -2,13 +2,23 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { dataClone, stringSwitch } from '@presource/core';
 import { propsSpy } from '../utilities';
 
-// TODO: clarity - The `localContextStore` type defines three overloads for contextStore:
-// - `contextStore()` returns T (subscribes to updates)
-// - `contextStore('data')` returns `{ clone, update }`
-// - `contextStore('state')` returns `{ reset, refresh }`
-// However, the `createContextStore` function (line 57) only implements the no-argument case.
-// The 'data' and 'state' options are NOT implemented. The story demonstrates `contextStore()`
-// but never tests `contextStore('data')` or `contextStore('state')`.
+// RUNTIME vs DECLARED TYPE: the `LocalContextStore` type below documents three ways to call
+// `contextStore` -- `()` for the live context, `('data')` for `{ clone, update }`, `('state')`
+// for `{ reset, refresh }` -- but only the no-argument read exists at runtime. The accessor
+// `createContextStore` returns is a zero-parameter arrow, so the argument in
+// `contextStore('data')` is dropped and the call yields the same propsSpy-wrapped context object
+// as `contextStore()`. Reading `clone`/`update`/`reset`/`refresh` off it only goes through the
+// spy's get trap and comes back `undefined` (spy.ts hands back `item[key]`), so none of those
+// documented members is callable anywhere; no call site in the repo uses those two forms. The
+// declared shape is unreachable for types as well: `propsSpy` is typed as core's `ObjectObserve`
+// (packages/presource/core/src/object/observe.ts), whose declared result is `Item`, so this
+// accessor's own type is `() => Item` rather than the three overloads returning T. That is why
+// the `as any` on this function's return value is load-bearing: dropping it makes
+// `yarn tsc --noEmit` fail with TS2322 on the `localContextStore` declaration —
+// "Type '... contextStore: () => Item; }' is not assignable to type
+// 'LocalContextStore'". What is actually exercised (the story in
+// context/local.stories.tsx, and the consumers under packages/react) is the no-argument read plus
+// direct property writes such as `store.counter++`.
 
 type ContextProviderProps = {
     data?: { [key: string]: any };

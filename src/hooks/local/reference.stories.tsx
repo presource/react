@@ -42,7 +42,9 @@ export const ReferenceHook = asTestStory(async () => {
     await $dom.button('Increase Counter').click();
     await $dom.button('Increase Counter').click();
     await $dom.button('Increase Counter').click();
-    // No matter what happen, render to be 1
+    // Three clicks, but still exactly one render on the record: the memo component has no
+    // changing props and writes through the ref never re-render. The next assertion proves
+    // the three writes did land (record.value is 3).
     await expect(record.count).toBe(1);
     await expect(record.value).toBe(3);
 });

@@ -25,7 +25,8 @@ const ComplexUsage = React.memo(() => {
     const props = {
         label: delay() || 'pending',
         onClick: () => {
-            // When clicked. It will override
+            // Clicking re-arms the delay with a new callback (no wait time is given, so the
+            // stored delay is reused); when that callback settles the label becomes 'completed'.
             delay(async () => {
                 await scriptPause(100);
                 return 'completed';

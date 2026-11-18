@@ -12,20 +12,21 @@ export type ReactiveComponentProps<P> = { [key in keyof P]?: P[key] } & {
     [key in `use${Capitalize<string & keyof P>}`]?: (inputs: CleanInput<P>) => P[keyof P];
 };
 
-// TODO: missing-test - Add unit tests for prototypeComponent.
-// Tests to add:
-// - Returns a factory function that accepts optional overrideProps
-// - Factory returns a React.memo FC with all props optional
-// - Fixed props (non-use prefixed) are merged with instance props; instance props win
-// - Hook-driven props (use prefixed) are resolved at render time via (resolvedProps) => value
-// - use-prefixed key strips 'use' prefix and lowercases first letter (e.g. useDisabled -> disabled)
-// - Merge order is: prototypeProps -> overrideProps -> component instance props
-// NOTE: The existing story (PrototypeButton.stories.tsx) does NOT use prototypeComponent at all - it uses
-// `button()` directly from `@reloaded/material`. The story should be rewritten to demonstrate the builder.
-// Prototype Component is designed for fast prototyping
-// That is, its default props should be set at the get go for easy usage.
+// Prototype Component is for fast prototyping: the default props are declared up front, so each
+// usage only states what it overrides.
+// Inside this package the only automated check is examples/PrototypeButton.test.ts, which runs
+// examples/PrototypeButton.stories through storybookTestRunner. That story builds one
+// prototypeComponent factory and renders it with and without overrideProps, so it pins the
+// prototype defaults applying, the override props winning over them, and the `use`-prefixed key
+// (`useDisabled` -> `disabled`) losing its prefix and lower-casing the next letter while resolving
+// against the merged props at render time. Left unexercised: the component's own instance props
+// winning over the fixed prototype props (the story renders both components with no props), i.e.
+// the full prototypeProps -> overrideProps -> instance props precedence.
+// Outside this package it is the builder behind many @reloaded/headless and @reloaded/material
+// components (clickable/button.tsx, drawer/BasicDrawer.tsx, …), so those packages' story-driven
+// tests exercise paths this file's own story does not.
 
-// The PrototypeComponent Props
+// Declared shape of the builder: (Component + prototype props) -> factory -> (override props) -> component.
 export type PrototypeComponent = <
     PrototypeProps extends ReactiveComponentProps<React.ComponentProps<Component>> &
         ReactiveComponentProps<PrototypeComponent>,

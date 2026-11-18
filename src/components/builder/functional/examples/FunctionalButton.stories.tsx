@@ -10,7 +10,8 @@ const meta: Meta = {
     component: functionalComponent(button(), (props) => {
         return {
             ...props,
-            // Onclick re-triggers the label
+    // onClick counts up the label: a non-numeric label (the default 'Material Button')
+    // restarts the count at 1
             onClick: () => {
                 // Calculating the label
                 const counter = props.label || 0;

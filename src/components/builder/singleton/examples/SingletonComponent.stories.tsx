@@ -5,7 +5,8 @@ import { expect } from 'storybook/test';
 import { Button } from '@reloaded/material';
 import { singletonComponent } from '@presource/react';
 
-// You can build reactive button with functional component!
+// One singleton shared by every rendered instance: the props live in a signalState, so an
+// update made through one instance re-renders all of them.
 const singletonButton = singletonComponent(Button, {
     label: 'SingletonButton',
     onClick: () => {

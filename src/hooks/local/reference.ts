@@ -1,15 +1,16 @@
 import { useRef } from 'react';
 
-// TODO: clarity - The return type `{ (): T; (value?: T): void; }` could be made more explicit
-// by documenting that calling with no arguments returns T, and calling with an argument is a void setter.
-// Consider using overloaded function signatures for better IDE support.
+// The accessor is argument-driven and keys off `updatedValue === undefined`: with no
+// argument (or with an explicit `undefined`) it reads the ref, so the setter path can never
+// clear the ref back to `undefined`.
 
 export type UseReferenceHook = <T>(initialValue?: T) => {
     (): T;
     (value?: T): void;
 };
 
-// Standard use state hook
+// Ref-backed accessor: the value survives re-renders, and writes never re-render (nothing
+// here calls a state setter).
 export const useReferenceHook: UseReferenceHook = (initialValue) => {
     const reference = useRef(initialValue);
 

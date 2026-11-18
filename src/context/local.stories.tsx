@@ -24,14 +24,16 @@ const ButtonCounter = React.memo((props: { id: string }) => {
 
 const ResetButton = React.memo(() => {
     const store = contextStore();
-    // TODO: clarity - ResetButton's onClick is empty `() => {}`.
-    // The local context store type signature defines `contextStore('state').reset()` and
-    // `contextStore('data').clone()`/`contextStore('data').update()`, but these are never demonstrated
-    // in the story. The ResetButton should call contextStore('state').reset() to show reset functionality.
+    // Reset is a placeholder here: the handler below is empty because the overloads it
+    // would call — `contextStore('state').reset()`, `contextStore('data').clone()`/
+    // `update()` — are declared on LocalContextStore but not implemented by
+    // createContextStore (see the note in local.tsx). They could not reset anything even if
+    // wired up: the handler runs on click, and calling `contextStore(...)` outside a render
+    // throws React's hook error first.
     const buttonProps: ButtonProps = {
         label: 'Reset',
         onClick: () => {
-            // TODO: Implement reset
+            // Intentionally empty until the 'state'/'data' overloads are implemented
         }
     };
     return <Button {...buttonProps} />;

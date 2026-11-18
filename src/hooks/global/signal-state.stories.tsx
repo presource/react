@@ -5,7 +5,8 @@ import { Button } from '@reloaded/material';
 import { FlexRow } from '@reloaded/headless';
 import { signalState } from './signal-state';
 
-// Signal can sit completely outside react component
+// The signal lives at module scope, outside any React component: a component that calls it
+// subscribes, and any write re-renders every subscriber.
 const counter = signalState(0);
 
 // This is configurations

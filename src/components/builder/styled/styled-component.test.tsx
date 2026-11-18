@@ -1,6 +1,10 @@
 // ── Unit tests for styledComponent ──
 //
-// Coverage for all TODO items listed in styled-component.tsx (lines 8-15):
+// The list below is the coverage map: every item has a like-named case further down this file, and
+// together they exercise both phases documented in styled-component.tsx (build-time classification
+// and render-time resolution). Sections 4, 9 and 10 pin extra behaviour this list does not name:
+// the falsy branch of a function entry, all three value types combined, and a non-CSS prop reaching
+// a custom function entry.
 //   - Default styling when no breakpoint props are passed
 //   - Custom string props ('custom' sentinel → read from component props)
 //   - Custom function props (computed from props at render time)
@@ -50,18 +54,17 @@ import { styledComponent } from './styled-component';
 // Emotion normally converts this to CSS rules; our mock applies base
 // properties as inline styles and captures @media queries in a data attr.
 //
-// File ref: styled-component.tsx line 167
-//   return styled(component)((props) => { /* style callback */ }) as any;
+// This mirrors the `styled(component)((props) => ...) as any` call at the end
+// of styledComponent in styled-component.tsx.
 // ---------------------------------------------------------------------------
 vi.mock('@emotion/styled', () => {
     const mockStyled = (component: any) => {
         // styled(component) returns a function expecting a style callback.
-        // See styled-component.tsx line 167.
         return (styleFn: any) => {
             // Returned component — mirrors Emotion's wrapper behaviour.
             const MockStyledComponent = (props: any) => {
-                // Mirror theme destructuring (styled-component.tsx line 170)
-                // so theme never reaches the DOM element.
+                // Mirror the `const { theme, ...rest } = props` destructure in the
+                // styledComponent style callback so theme never reaches the DOM element.
                 const { theme, ...rest } = props;
 
                 // Call the original style callback with all props (incl. theme).
@@ -106,7 +109,8 @@ beforeEach(() => {
 
 describe('styledComponent', () => {
     // ── 1. Default styling without breakpoint props ──
-    // TODO styled-component.tsx line 9
+    // Exercises the defaultStyling bucket produced by the build-time scan and the
+    // defaultStyling spread at the top level of the style callback's return object.
     it('should apply default styling when no breakpoint props are passed', () => {
         // Arrange: static CSS values → defaultStyling
         const Box = styledComponent('div', {
@@ -120,18 +124,19 @@ describe('styledComponent', () => {
         const box = screen.getByTestId('box');
 
         // Assert: defaultStyling values are spread at the top level of the
-        // returned style object (styled-component.tsx line 210), so they
-        // appear as inline styles on the element.
+        // returned style object (the `...defaultStyling` in the style callback's
+        // return), so they appear as inline styles on the element.
         expect(box.style.display).toBe('flex');
         expect(box.style.alignItems).toBe('center');
         expect(box.style.color).toBe('red');
     });
 
     // ── 2. Custom string props → read from component props ──
-    // TODO styled-component.tsx line 10
+    // Exercises the 'custom' sentinel: the string case of the render-time customStyling
+    // resolution reads the value back from the same-named key of `rest`.
     it('should resolve custom string props from component props', () => {
         // Arrange: the 'custom' sentinel marks this key for prop-based resolution.
-        // At render time, rest.color provides the value (styled-component.tsx line 190).
+        // At render time, rest.color provides the value.
         const Box = styledComponent('div', {
             color: 'custom'
         });
@@ -154,7 +159,8 @@ describe('styledComponent', () => {
     });
 
     // ── 3. Custom function props → computed from rest ──
-    // TODO styled-component.tsx line 11
+    // Exercises the function case of the render-time customStyling resolution: the entry
+    // is invoked with `rest` and its return value is what gets styled.
     it('should resolve custom function props with component props', () => {
         // Arrange: function receives rest props, returns computed value
         const Box = styledComponent('div', {
@@ -192,13 +198,12 @@ describe('styledComponent', () => {
     });
 
     // ── 5. Number → rem conversion via styleStructure ──
-    // TODO styled-component.tsx line 12
     //
     // NOTE: Numbers in defaultStyling pass through WITHOUT styleStructure
-    // conversion (styled-component.tsx line 134 — they go to defaultStyling
-    // as raw values). Only customStyling values (functions/'custom') go
-    // through styleStructure. To test the rem path we use a function that
-    // returns a number.
+    // conversion (the number case of the build-time classification delegates to
+    // defaultStyling with the raw value). Only customStyling values (functions and
+    // the 'custom' sentinel) go through styleStructure. To test the rem path we use
+    // a function that returns a number.
     it('should convert number values to rem via styleStructure', () => {
         // Arrange: function returns a number → customStyling → styleStructure
         const Box = styledComponent('div', {
@@ -209,7 +214,8 @@ describe('styledComponent', () => {
         render(<Box data-testid="box">content</Box>);
         const box = screen.getByTestId('box');
 
-        // Assert: 16 → (16 * 8) / 16 = 8 → '8rem' (styleStructure, line 22 of structure.ts)
+        // Assert: 16 → (16 * 8) / 16 = 8 → '8rem' (the number branch of
+        // styleStructure in utility/structure.ts).
         // This lands in @media (min-width: 0px) because it flows through styleMedia.
         const media = JSON.parse(box.getAttribute('data-test-media')!);
         expect(media['@media (min-width: 0px)']).toStrictEqual({ fontSize: '8rem' });
@@ -217,9 +223,9 @@ describe('styledComponent', () => {
 
     // ── 5b. DefaultStyling numbers are NOT converted (pass-through) ──
     it('should pass defaultStyling numbers as raw values without conversion', () => {
-        // Numbers in defaultStyling are NOT run through styleStructure
-        // (styled-component.tsx line 133-135). They are spread directly
-        // at the top level of the style object.
+        // Numbers in defaultStyling are NOT run through styleStructure: the number
+        // case of the build-time classification delegates to defaultStyling with the
+        // raw value. They are spread directly at the top level of the style object.
         const Box = styledComponent('div', {
             fontSize: 16
         });
@@ -233,7 +239,8 @@ describe('styledComponent', () => {
     });
 
     // ── 6. 'custom' sentinel → skipped when prop is undefined ──
-    // TODO styled-component.tsx line 13
+    // Exercises the `value !== undefined` guard in the render-time customStyling loop:
+    // a sentinel whose prop is absent contributes nothing to the resolved styles.
     it('should skip custom sentinel when the corresponding prop is undefined', () => {
         // Arrange: color is marked 'custom' but no color prop is passed.
         // display is static (defaultStyling).
@@ -248,7 +255,8 @@ describe('styledComponent', () => {
         // Assert: display is applied (defaultStyling at top level).
         expect(box.style.display).toBe('flex');
 
-        // Color was undefined → skipped (value !== undefined check, line 196).
+        // Color was undefined → skipped by the `value !== undefined` guard in the
+        // customStyling loop.
         // The @media queries from styleMedia are still generated (all breakpoints)
         // but they should NOT contain a 'color' entry.
         const media = JSON.parse(box.getAttribute('data-test-media')!);
@@ -261,7 +269,9 @@ describe('styledComponent', () => {
     });
 
     // ── 7. Breakpoint-based @media queries ──
-    // TODO styled-component.tsx line 14
+    // Exercises styleMedia with breakpoint props: the `sm`/`md` keys of `rest` become
+    // @media (min-width: 600px)/@media (min-width: 900px) groups. styleCombine always
+    // emits all five breakpoints, so the untouched ones stay in the output as empty groups.
     it('should generate correct @media queries for breakpoint-based styles', () => {
         // Arrange: static base + breakpoint overrides via rest props
         const Box = styledComponent('div', {
@@ -298,7 +308,8 @@ describe('styledComponent', () => {
     });
 
     // ── 8. Theme prop is not forwarded to DOM ──
-    // TODO styled-component.tsx line 15
+    // Exercises the `const { theme, ...rest } = props` destructure at the top of the
+    // style callback.
     it('should not pass theme prop to the DOM element', () => {
         const Box = styledComponent('div', { display: 'flex' });
 
@@ -310,9 +321,11 @@ describe('styledComponent', () => {
         );
         const box = screen.getByTestId('box');
 
-        // Assert: no 'theme' HTML attribute on the rendered element.
-        // Handled by theme destructuring (styled-component.tsx line 170) +
-        // Emotion's built-in theme handling.
+        // Assert: no 'theme' HTML attribute on the rendered element. With @emotion/styled mocked,
+        // the element props come from the mock's own `theme` destructure (it mirrors the
+        // implementation's), so this case pins that destructure contract rather than Emotion's
+        // handling; unmocked, Emotion drops `theme` as well because it is not a valid HTML
+        // attribute for @emotion/is-prop-valid.
         expect(box.getAttribute('theme')).toBeNull();
 
         // Base styling still works
@@ -352,8 +365,10 @@ describe('styledComponent', () => {
     // consumed ONLY by a custom function entry (e.g. a `muted` flag picked
     // up inside the function). The boolean must survive the props flow and
     // reach the function; the resolved string value ends up in the media
-    // styles. (The `rest` spread forwards it to the DOM as an attribute —
-    // harmless for span/div consumers that do not care.)
+    // styles. (The mock's `rest` spread also hands `muted` to the element,
+    // where React writes it as a DOM property rather than an attribute —
+    // `muted` is in React's mustUseProperty list — and no assertion here
+    // depends on that.)
     it('should pass boolean props through to custom function entries', () => {
         const Box = styledComponent('div', {
             color: (props: any) => (props.muted ? '#475569' : '#fbbf24')

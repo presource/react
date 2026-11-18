@@ -3,8 +3,6 @@
 // reactiveComponent wraps a React.FC with React.memo and passes props through
 // propsReactive so that prop mutations trigger re-renders.
 //
-// File ref: reactive-component.ts lines 21-28
-//
 // propsReactive (utilities/props/reactive.ts) creates a Proxy over the props
 // object. When a property is written (set), it updates the ref and triggers a
 // state refresh, causing the component to re-render. Reading props does NOT
@@ -20,7 +18,7 @@ describe('reactiveComponent', () => {
     // When a prop is mutated through the reactive proxy, the component re-renders
     // with the updated value.
     // Uses userEvent.click + findByRole (async) to handle React batching.
-    // Follows the same pattern as reactive.test.tsx.
+    // Follows the same pattern as utilities/props/reactive.test.tsx.
     it('causes re-render when a prop is mutated', async () => {
         // Arrange: a component that renders a prop and mutates it on click
         type Props = { label: string };
@@ -86,7 +84,10 @@ describe('reactiveComponent', () => {
     });
 
     // ── Works with multiple prop mutations ──
-    // Multiple property writes should each trigger a re-render.
+    // Pins a single prop write through the reactive proxy: the write re-renders the
+    // component once (renderCount 1 -> 2) and the new value is on screen. No second
+    // write happens in this case, so the "every mutation" wording is only exercised
+    // for one mutation.
     it('re-renders on every prop mutation', async () => {
         let renderCount = 0;
         type Props = { value: string; flag?: boolean };

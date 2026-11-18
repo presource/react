@@ -4,10 +4,13 @@ import { functionalComponent } from '@presource/react';
 import { $dom, asTestStory } from '@presource/test';
 import React from 'react';
 
-// You can build reactive button with functional component!
+// Object-form reactiveLogic: the object becomes the component's reactive props, so a handler that
+// writes `this.<prop>` re-renders the button with the new label.
 const ReactiveButton = functionalComponent(Button, {
     label: 'Click to Change Label',
-    // Use enclosed function to have access to this.
+    // Method shorthand, not an arrow: functionalComponent rebinds function entries with
+    // `originalValue.apply(reactiveProps, args)`, so `this` is the reactive props object and
+    // `this.label = ...` is a reactive write. An arrow function would ignore that rebinding.
     onClick() {
         this.label = 'Label Changed';
     },

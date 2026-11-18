@@ -2,17 +2,18 @@ import React from 'react';
 import { isFunction, objectEach, typeSwitch } from '@presource/core';
 import { isReactComponent, propsReactive } from '../../../utilities';
 
-// TODO: missing-test - Add unit tests for functionalComponent.
-// Tests to add:
-// - When component is a string, wraps it as a simple FC returning that string
-// - When component is an FC, wraps it with memoization
-// - When functionalProps is an object, values are resolved as reactive props; functions bind `this` to reactiveProps
-// - When functionalProps is a function, receives propsReactive(props) and can return new props or ReactNode
-// - When evaluatedLogic is null, renders null
-// - When evaluatedLogic is a React component (isReactComponent), renders it directly
-// - When evaluatedLogic is a plain object, creates element with Component and that object
-// - When evaluatedLogic is undefined (default case), renders Component with original props
-// NOTE: The return type is cast `as any` (line 66) which hides type mismatches. Consider tightening this.
+// Inside this package the only automated checks are the example stories, run through
+// storybookTestRunner by examples/FunctionalComponent.test.ts and
+// examples/FunctionalButton.test.tsx. FunctionalComponent.stories exercises the object form of
+// `reactiveLogic` (function entries are rebound so `this` is the reactive props object, and a
+// write through it re-renders); FunctionalButton.stories exercises the function form (it receives
+// the reactive props and returns a replacement props object).
+// Left unexercised: `Component` passed as a string (the branch that renders the string itself),
+// and an evaluated logic that is null, a value React has stamped, or void/undefined (the default
+// branch, which renders `Component` with the original props).
+// The `as any` on the returned React.memo component hides the difference between the props
+// React.memo infers and the declared React.FC<Partial<...>> result, so a wrong shape here fails
+// no typecheck.
 export type FunctionalComponent = <Component extends React.FC<React.ComponentProps<Component>>>(
     Component: Component | string,
     reactiveLogic?:
@@ -21,7 +22,8 @@ export type FunctionalComponent = <Component extends React.FC<React.ComponentPro
 ) => React.FC<Partial<React.ComponentProps<Component>>>;
 
 export const functionalComponent: FunctionalComponent = (component, functionalProps) => {
-    // Wrapping the Component correctly
+    // Resolve what gets rendered: a string `component` becomes an FC that renders that string by
+    // itself (no element is created around it); anything else is taken as the component.
     const Component: React.FC<any> = typeSwitch(component, {
         string: ({ value }) => {
             return () => value;
@@ -39,7 +41,8 @@ export const functionalComponent: FunctionalComponent = (component, functionalPr
                 // Build it as reactive props
                 const reactiveProps = propsReactive(magicProps);
 
-                // Modifying the magic props, remapping all the values
+                // Rebind every function entry so its `this` is the reactive props object — the
+                // `this.label = ...` handlers in examples/FunctionalComponent.stories depend on it.
                 objectEach(magicProps, ({ key, value: originalValue }) => {
                     if (isFunction(originalValue)) {
                         magicProps[key] = (...args: any[]) => originalValue.apply(reactiveProps, args);
@@ -56,7 +59,8 @@ export const functionalComponent: FunctionalComponent = (component, functionalPr
         return typeSwitch(evaluatedLogic, {
             null: () => null,
             object: ({ value }) => {
-                // If it is React component, returns it as is
+                // A value React has stamped (an element, a memo/forwardRef wrapper) is rendered as
+                // it is; a plain object is treated as the props for `Component` instead.
                 if (isReactComponent(value)) return value;
 
                 return React.createElement(Component, value);

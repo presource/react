@@ -3,16 +3,15 @@ import { signalState } from '../../../hooks';
 import { objectProxy, typeSwitch } from '@presource/core';
 import { isReactComponent } from '../../../utilities';
 
-// TODO: missing-test - Add unit tests for singletonComponent.
-// Tests to add:
-// - Calling handler() with no args returns a ReactNode (renders the component)
-// - Calling handler('key') returns the value of that key from state
-// - Calling handler({ key: value }) updates state and all instances re-render
-// - Multiple calls to handler() all share the same state
-// - handler.state is the underlying signalState instance
-// - Works with both React.FC and plain function as componentDesign
-// - When componentDesign is an object and isReactComponent returns true, wraps in React.createElement
-// NOTE: handler is typed as `any` (line 62), which loses type safety. Consider using an overloaded function type.
+// The only automated check is examples/SingletonComponent.test.ts, which runs
+// examples/SingletonComponent.stories through storybookTestRunner. That story renders four
+// instances of one singleton, so it already pins that handler() renders the component and that
+// handler({ ... }) writes the shared signal and re-renders every instance.
+// Left unexercised: handler('key') (the string branch that reads one prop back out of the
+// signal), the handler.state handle, a componentDesign that is not a function, and the
+// isReactComponent branch that wraps an object design in React.createElement.
+// NOTE: `handler` is declared `any`, so none of the overloads declared on SingletonComponent's
+// return type are checked against this implementation.
 export type SingletonComponent = <T extends { [key: string]: any }>(
     component: React.FC<T>,
     initialProps?: Partial<T>
@@ -23,14 +22,17 @@ export type SingletonComponent = <T extends { [key: string]: any }>(
     state: ReturnType<typeof signalState<T>>;
 };
 
-// Singleton Button will bind all components to a single source
-// This is useful when the same component appears in multiple places
+// Singleton Component binds every instance it renders to one shared props source: the signalState
+// created once per `singletonComponent()` call, so a write through any instance re-renders all of
+// them — that is what makes the same component reusable in several places.
 export const singletonComponent: SingletonComponent = (componentDesign, initialProps = {}) => {
     const state = signalState(initialProps);
 
-    // Singleton Component
+    // The one component every instance renders: the no-argument `state()` read below is what
+    // subscribes it to the shared signal, and the proxy over the signal's current value turns
+    // prop writes into merges back into that signal.
     const Component = () => {
-        // Ensuring things get rendered
+        // Subscribe this instance to the shared signal (the read result itself is unused here).
         state();
 
         const reactiveProps = objectProxy(state.value(), {
@@ -65,7 +67,7 @@ export const singletonComponent: SingletonComponent = (componentDesign, initialP
 
         return typeSwitch(input, {
             string: ({ value: key }) => state.value()[key],
-            // Props upgrade
+            // An object argument merges into the shared props, so every instance re-renders
             object: () => {
                 state({
                     ...state.value(),

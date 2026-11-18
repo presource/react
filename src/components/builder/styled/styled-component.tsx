@@ -4,18 +4,19 @@ import { objectEach, stringSwitch, typeSwitch } from '@presource/core';
 import styled from '@emotion/styled';
 import { styleCombine, styleMedia, styleStructure } from './utility';
 
-// TESTS: see styled-component.test.tsx for unit test coverage.
-// All 7 TODO test cases below are covered:
-//   ✓ Default styling when no breakpoint props are passed
-//   ✓ Custom string props map to the corresponding prop value from rest
-//   ✓ Custom function props receive props and return computed values
-//   ✓ Number values converted via styleStructure (rem conversion)
-//   ✓ 'custom' string value marks the key for custom handling
-//   ✓ Breakpoint-based styles generate correct @media queries
-//   ✓ Theme prop is destructured and not passed to the DOM
-// TODO: missing-story - Add Storybook story demonstrating styledComponent usage
-// NOTE: Breakpoints are hardcoded (lines 174-180). Consider allowing theme-based breakpoint overrides.
-// NOTE: The return type is cast `as any` which hides type mismatches.
+// TESTS: styled-component.test.tsx unit-tests both phases described below — the build-time
+// classification and the render-time resolution — with @emotion/styled mocked so the style
+// callback's returned object can be asserted directly (base CSS as inline styles, @media
+// entries in a data attribute).
+// COVERAGE: this package has no Storybook story for styledComponent, so those tests are its only
+// automated check here. Further down the repo the builder is exercised by consumers such as
+// packages/react/headless/components (layout/flex.tsx, layout/grid.tsx, dashboard/TwoColumnDashboard.tsx) and
+// packages/presource/nexus/src/dashboard/components/nexus-dashboard.tsx.
+// NOTE: the breakpoint thresholds used in the style callback are hardcoded literals rather than
+// values read from the Emotion theme, so per-app breakpoint overrides currently mean editing
+// this file.
+// NOTE: the styled() result is cast `as any`, which hides any mismatch between what Emotion
+// infers for the component and the declared React.FC<BuilderType<T>>.
 
 /**
  * styledComponent — A factory that creates responsive, theme-aware Emotion styled components
@@ -42,7 +43,8 @@ import { styleCombine, styleMedia, styleStructure } from './utility';
  *
  * ── Phase 2: Render-time style resolution ──
  * The returned styled component is called on every render:
- *   1. `theme` is destructured from props so it never reaches the DOM.
+ *   1. `theme` is destructured out, so the style logic reads `rest` only. (Keeping `theme` off the
+ *      DOM element is Emotion's own prop filtering; this line only keeps it out of `rest`.)
  *   2. For each customStyling entry:
  *        • string marker → looks up `rest[key]` (the prop value for that CSS property name)
  *        • function     → calls the function with `rest` to compute the value
@@ -71,8 +73,10 @@ import { styleCombine, styleMedia, styleStructure } from './utility';
  *   - styleMedia:     wraps breakpoint-grouped styles into { "@media (min-width: Xpx)": { ... } }
  */
 
-// A function type for dynamic/custom prop-driven values.
-// Receives the component's props (minus theme) and returns a CSS value or object.
+// A function type for dynamic, prop-driven values: called with `rest` (the props minus `theme`)
+// during render. The `void` in the union is load-bearing — a function that returns nothing yields
+// `undefined`, and the `value !== undefined` guard in the style callback then skips the key
+// entirely instead of emitting a style for it.
 type FlexibleFunction<T> = (input: T) => {} | number | string | void;
 
 // The primary input type: maps each CSS property name to one of three value types:
@@ -83,8 +87,12 @@ type PrimaryInput<T> = {
     [key in keyof React.CSSProperties]: React.CSSProperties[key] | 'custom' | FlexibleFunction<T>;
 };
 
-// Standard HTML element attributes plus optional children — ensures the component
-// accepts all normal HTML props while preventing unknown props from reaching the DOM.
+// Standard HTML element attributes plus optional children. This is a compile-time shape only: it
+// lets the generated component take every normal HTML attribute, and keys outside this intersection
+// and T are rejected by TypeScript's excess-property check. Nothing here filters props at runtime —
+// what reaches the element is Emotion's decision (for an HTML-tag base @emotion/styled screens props
+// through @emotion/is-prop-valid), and this file only ever narrows the props the style callback
+// reasons about.
 type StandardReactProps = React.HTMLAttributes<HTMLElement> & {
     children?: React.ReactNode;
 };
@@ -132,12 +140,16 @@ export const styledComponent: StyledComponent = (component: any, input) => {
 
     objectEach(input, ({ key, value: data }) => {
         typeSwitch(data, {
-            // Number → static value, falls through to defaultStyling
-            // e.g. { fontSize: 16 } → will be converted to rem later by styleStructure
+            // Number → delegated to the `default` case below, so it lands in defaultStyling
+            // as a raw number: styleStructure never sees it (that rem conversion applies only
+            // to customStyling values), and the number is serialised as px when React applies
+            // the style. The case titled `should pass defaultStyling numbers as raw values
+            // without conversion` in styled-component.test.tsx pins it: input `{ fontSize: 16 }`
+            // renders box.style.fontSize === '16px', not '8rem'.
             number: ({ value, default: defaultCallback }) => {
                 defaultCallback(value);
             },
-            // String → check if it's the 'custom' sentinel or a plain CSS value
+            // String → either the 'custom' sentinel or a plain CSS value
             string: ({ value, default: defaultCallback }) => {
                 stringSwitch(value, {
                     // 'custom' sentinel → marks this key for prop-based resolution at render time
@@ -168,12 +180,15 @@ export const styledComponent: StyledComponent = (component: any, input) => {
     // ── Phase 2: Return the styled component ──
     // The Emotion styled() call creates a component that runs the style function on every render.
     return styled(component)((props) => {
-        // Destructure theme from props so it does NOT get forwarded to the DOM element.
-        // 'rest' contains all remaining props including custom prop values and breakpoint overrides.
+        // Strip `theme` out of the props this callback reasons about; `rest` is the single source
+        // for custom prop values and breakpoint overrides. Keeping `theme` off the DOM element is
+        // Emotion's own prop filtering rather than this destructure — see the StandardReactProps
+        // note above.
         const { theme, ...rest } = props;
 
-        // Responsive breakpoint thresholds in pixels.
-        // These are hardcoded here; consider allowing theme-based overrides in the future.
+        // Responsive breakpoint thresholds in pixels, rebuilt from these literals on every
+        // render. They are not read from the Emotion theme (see the NOTE above
+        // `styledComponent`), and they are handed to `styleMedia` to build the @media queries.
         const breakpoints = {
             xs: 0,
             sm: 600,

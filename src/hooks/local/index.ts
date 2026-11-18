@@ -1,4 +1,6 @@
-// All these are localised hooks, and it should be only use within a React Component
+// All of these are component-scoped hooks: each one wraps useState/useRef/useEffect, so it must be
+// called from inside a React component or another hook — unlike hooks/global/signal-state.ts, which
+// is built to live at module scope.
 
 export * from './delay';
 export * from './delegate';

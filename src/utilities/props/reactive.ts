@@ -1,21 +1,31 @@
 import { useRef, useState } from 'react';
 import { objectProxy } from '@presource/core';
 
-// TODO: clarity - The type `PropsReactive` is `<T>(input: T) => T` which is correct, but
-// the proxy only intercepts `set` operations. `get` operations return the stored value directly
-// without any special handling. This means reading props doesn't trigger re-renders;
-// only writing to the proxy does.
+// The proxy registers a `set` trigger only. `objectProxy` (packages/presource/core/src/object/
+// proxy.ts) always installs a get trap, but with no `get` trigger registered that trap
+// short-circuits to a plain `object[key]` read (the `if (!callback) return object[strKey]`
+// branch), so reads stay ordinary property lookups: reading props never re-renders, only
+// writing through the proxy does.
 
 export type PropsReactive = <T extends { [key: string]: any }>(input: T) => T;
 
-// This i s shallow props reactivity
+// Shallow reactivity: only the top-level keys of the wrapped object are proxied, so nested
+// objects are handed out as-is and writes inside them are never seen.
 export const propsReactive: PropsReactive = (changeableProps) => {
     const [_, refresh] = useState({});
 
-    // ref always holds the latest props, never stale
+    // The ref is seeded once, on the first render, and is never re-seeded: later renders
+    // pass a fresh props object into `useRef`, which React ignores. So the wrapped value is
+    // the first render's props plus whatever was written through the proxy — prop changes
+    // pushed down by the parent are not picked up.
     const propsRef = useRef(changeableProps);
 
-    //  Standard Proxy
+    // The write reassigns the ref instead of writing the proxy's own target, so reading the
+    // same key back through THIS proxy instance still yields the pre-write value; the
+    // refresh below re-runs the component, and the new render builds a proxy over the new
+    // ref value — that is how the written value surfaces. Returning true is required by the
+    // Proxy set trap, and is exactly why frozen targets throw here (see
+    // components/builder/reactive/reactive-component.ts).
     return objectProxy(propsRef.current, {
         set: ({ key, value }) => {
             propsRef.current = { ...propsRef.current, [key]: value };

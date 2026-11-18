@@ -13,10 +13,11 @@ const StandardUsage = React.memo(() => {
     });
 
     const buttonProps = {
-        // if delegate is not passed any arguments, it will return the current value
+        // With no arguments the delegate just returns the last stored value
         label: `Standard Value: ${(value() || 0).toString()}`,
         onClick: () => {
-            // To trigger delevate function, an argument must be passed
+            // Any argument runs the callback (even the `null` used below); zero arguments
+            // is the read path instead
             value(null);
         }
     };
@@ -31,10 +32,11 @@ const PromiseUsage = React.memo(() => {
     });
 
     const buttonProps = {
-        // if delegate is not passed any arguments, it will return the current value
+        // With no arguments the delegate just returns the last stored value
         label: `Promised Value: ${(value() || 0).toString()}`,
         onClick: () => {
-            // To trigger delevate function, an argument must be passed
+            // Any argument runs the callback (even the `null` used below); zero arguments
+            // is the read path instead
             value(null);
         }
     };
@@ -52,10 +54,11 @@ const AdvancedUsage = React.memo(() => {
     });
 
     const buttonProps = {
-        // if delegate is not passed any arguments, it will return the current value
+        // With no arguments the delegate just returns the last stored value
         label: `Advanced Value: ${(value() || 0).toString()}`,
         onClick: () => {
-            // To trigger delevate function, an argument must be passed
+            // Any argument runs the callback (even the `null` used below); zero arguments
+            // is the read path instead
             value(1);
         }
     };
@@ -70,19 +73,21 @@ const ComplexUsage = React.memo(() => {
     });
 
     const buttonPropsOne = {
-        // if delegate is not passed any arguments, it will return the current value
+        // With no arguments the delegate just returns the last stored value
         label: `ButtonOne: ${(value() || 0).toString()}`,
         onClick: () => {
-            // To trigger delevate function, an argument must be passed
+            // Any argument runs the callback (even the `null` used below); zero arguments
+            // is the read path instead
             value(10, 5);
         }
     };
 
     const buttonPropsTwo = {
-        // if delegate is not passed any arguments, it will return the current value
+        // With no arguments the delegate just returns the last stored value
         label: `ButtonTwo: ${(value() || 0).toString()}`,
         onClick: () => {
-            // To trigger delevate function, an argument must be passed
+            // Any argument runs the callback (even the `null` used below); zero arguments
+            // is the read path instead
             value(10);
         }
     };

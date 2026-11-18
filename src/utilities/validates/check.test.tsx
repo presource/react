@@ -8,9 +8,9 @@
 //   - React.forwardRef() → REACT_FORWARD_REF_TYPE symbol
 //
 // Plain function components (React.FC) do NOT have $$typeof set directly,
-// so isReactComponent returns false for them.
-//
-// File ref: check.ts line 12-13
+// so isReactComponent returns false for them. React elements (createElement
+// results) DO carry the marker, so they return true even though an element is
+// not a component — no case here pins that.
 
 import React from 'react';
 import { isReactComponent } from './check';
@@ -74,8 +74,9 @@ describe('isReactComponent', () => {
     });
 
     // ── Plain function components (React.FC) ──
-    // A plain function component does NOT have $$typeof set. Only memo/forwardRef
-    // wrappers set that symbol. This is a known limitation noted in check.ts line 10.
+    // A plain function component does NOT have $$typeof set. Only the values React
+    // stamps (memo/forwardRef, elements) carry that symbol — the limitation documented
+    // on `isReactComponent` in check.ts.
     it('returns false for plain function components (no memo/forwardRef)', () => {
         const PlainComp: React.FC<{ label?: string }> = () => <div />;
         expect(isReactComponent(PlainComp)).toBe(false);

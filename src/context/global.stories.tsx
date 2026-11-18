@@ -27,12 +27,13 @@ const meta: Meta = {
                 <Button
                     label={`Reset`}
                     onClick={() => {
-                        // TODO: bug - Reset functionality is not implemented correctly.
-                        // The 'data' option is not handled by the proxyHandler in global.ts.
-                        // Currently the proxy only handles 'get' and 'set' methods, but
-                        // globalContextStore('data') would trigger a 'get' which returns the value,
-                        // not the { reset, initial } API described in the type signature.
-                        // This needs to be fixed in global.ts before enabling this test.
+                        // Reset is a placeholder: `reactStore('data').reset()` below is the
+                        // API the store's type declares, but the store proxy has no apply
+                        // trap, so the call falls through to `useData` (see the note on
+                        // `globalContextStore` in global.ts). A click is not a render, so the
+                        // `useState` inside `useData` throws instead of resetting anything.
+                        // The matching play step at the bottom of this file stays commented
+                        // out until global.ts implements the 'data' option.
                         reactStore('data').reset();
                     }}
                 />
@@ -49,6 +50,8 @@ export const GlobalStore = asTestStory(async () => {
     await $dom.button('Counter: 1').click();
     await $dom.button('Counter: 2').click();
     await $dom.button('Counter: 3').click();
-    // Reset the store
-    // await $dom.button('Reset').click(); // This is not implemented correctly yet
+    // The reset assertion this story would make, kept commented out: clicking Reset
+    // throws today because the store's 'data' overload is not implemented (see the note
+    // on the Reset button above and on `globalContextStore` in global.ts).
+    // await $dom.button('Reset').click();
 });

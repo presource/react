@@ -14,13 +14,18 @@ type ExtendedHandler<T> = {
     get: () => T extends void ? any | Promise<any> : T | Promise<T>;
 };
 
-// Delegate hook is build now and execute later.
-// It also allows you to run async function easier
+// "Build now, execute later": the callback is captured once when the hook is created, and every
+// call WITH arguments runs it with those arguments and publishes the result — a promise result is
+// published when it settles, which is what makes an async callback need no `await` at the call
+// site. A call with NO arguments skips the callback and returns the last published value — and
+// because `useStateHook` (./state.ts) reads `undefined` as its read signal, a callback that
+// resolves to `undefined` publishes nothing and re-renders nothing.
 
 export const useDelegateHook: UseDelegateHook = (callback) => {
     const state = useStateHook();
 
-    // This is the designated executor
+    // The executor: runs the captured callback with the forwarded arguments and publishes
+    // whatever it returns (a promise is published as its resolved value, see the note above).
     const executor = (args: Parameters<typeof callback>) => {
         // Executing function
         const result = callback(...args);
@@ -40,11 +45,16 @@ export const useDelegateHook: UseDelegateHook = (callback) => {
             return state();
         }
 
-        // Why is this: TS2556: A spread argument must either have a tuple type or be passed to a rest parameter
+        // The cast is load-bearing: `parameters` is a plain `any[]` while `executor`'s parameter
+        // is the callback's fixed-arity tuple, and without the cast this call fails with TS2345
+        // ("Argument of type 'any[]' is not assignable to parameter of type 'P'" — observed; the
+        // sibling TS2556 is the error for spreading a non-tuple straight into a call, and typing
+        // the value as the tuple is also what keeps `callback(...args)` inside `executor` legal).
         executor(parameters as Parameters<typeof callback>);
     };
 
-    // Assigning new functionality
+    // Extra handles on the same accessor: `get` reads the published value and `set` writes one
+    // directly — neither of them runs the callback.
     Object.assign(handler, {
         get: () => state(),
         set: (input: any) => {

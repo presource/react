@@ -1,10 +1,8 @@
 // ── Unit tests for propsSpy (spy.ts) ──
 //
 // propsSpy wraps an object in a reactive Proxy that fires a callback on every
-// property get/set operation. Recursively proxies nested objects (except React
-// components, which are left as-is).
-//
-// File ref: spy.ts lines 23-79
+// property get/set operation. Recursively proxies nested plain objects (except React
+// components and arrays, which are left as-is — see isValidObject in spy.ts).
 
 import React from 'react';
 import { propsSpy } from './spy';
@@ -76,9 +74,11 @@ describe('propsSpy', () => {
     });
 
     // ── get trap: React components are NOT recursively proxied ──
-    // spy.ts line 17-18 skips React components (identified by $$typeof)
+    // isValidObject in spy.ts rejects anything isReactComponent accepts (a `$$typeof`
+    // marker), so the component is handed back unproxied.
     it('does NOT recursively proxy React components', () => {
-        // Using a plain function without JSX so the test file stays .ts extension-compatible
+        // A memo wrapper carries $$typeof, and its inner definition is written without
+        // JSX so this file needs no JSX transform.
         const MemoComp = React.memo(function Div() { return null; });
         // $$typeof is a Symbol, and React.memo sets it on the returned object.
 
@@ -213,14 +213,17 @@ describe('propsSpy', () => {
         expect(entries[2].value).toBe('deep');
     });
 
-    // ── arrays are objects but get proxied further ──
-    // Arrays pass isObject() check, so they should be recursively proxied.
+    // ── Arrays are not plain objects, so they are not proxied further ──
+    // `isObject` (in @presource/core) compares the value's constructor to `Object`, and an
+    // array's constructor is `Array`, so `items` fails isValidObject and is handed back
+    // unproxied. This case only asserts that the get trap fires once for `items`, so it
+    // does not distinguish proxied from unproxied either way.
     it('recursively proxies array values', () => {
         const obj = { items: [1, 2, 3] };
         const { entries, callback } = createCollector();
         const proxied = propsSpy(obj, callback);
 
-        // Access 'items' - returns a proxy-wrapped array
+        // Access 'items' — handed back as the raw array, not a proxy
         const _ = proxied.items;
 
         // get 'items' fires once
