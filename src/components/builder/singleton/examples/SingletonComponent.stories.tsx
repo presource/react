@@ -1,12 +1,9 @@
 import { Meta } from '@storybook/react';
+import React from 'react';
+import { $screen, $user, asTestStory } from '@presource/test';
+import { expect } from 'storybook/test';
 import { Button } from '@reloaded/material';
 import { singletonComponent } from '@presource/react';
-import React from 'react';
-
-// TODO: missing-story-test - This story has no `asTestStory` assertions. Add tests to verify:
-// - All four buttons render with the same label 'SingletonButton'
-// - Clicking one button updates all four buttons to 'All changed'
-// - handler.state exposes the underlying signalState
 
 // You can build reactive button with functional component!
 const singletonButton = singletonComponent(Button, {
@@ -37,4 +34,13 @@ const meta: Meta = {
 export default meta;
 
 // Storybook
-export const SingletonButton = {};
+export const SingletonButton = asTestStory(async () => {
+    // Every instance shares the same state, so all four render the initial label.
+    const initialButtons = await $screen.findAllByRole('button', { name: 'SingletonButton' });
+    await expect(initialButtons).toHaveLength(4);
+
+    // A single click updates the shared singleton state for every instance.
+    await $user.click(initialButtons[0]);
+    const updatedButtons = await $screen.findAllByRole('button', { name: 'All changed' });
+    await expect(updatedButtons).toHaveLength(4);
+});

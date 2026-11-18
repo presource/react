@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { useToggleHook } from '@presource/react';
-import { $dom, $expect, asTestStory } from '@library/test';
+import { $dom, $expect, asTestStory } from '@presource/test';
 import { FlexColumn, HeadlessButton } from '@reloaded/headless';
 
 // Simple toggle usage

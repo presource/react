@@ -1,4 +1,4 @@
-import { storybookTestRunner } from '@library/test';
+import { storybookTestRunner } from '@presource/test';
 import { render } from '@testing-library/react';
 import React from 'react';
 import { useReferenceHook } from './reference';

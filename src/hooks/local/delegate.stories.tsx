@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { useDelegateHook } from '@presource/react';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 import { FlexColumn, FlexRow, HeadlessButton } from '@reloaded/headless';
 import { scriptPause } from '@presource/core';
 

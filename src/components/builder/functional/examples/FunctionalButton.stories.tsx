@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import { functionalComponent } from '@presource/react';
 import { button } from '@reloaded/material';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 
 // This is configuration
 const meta: Meta = {

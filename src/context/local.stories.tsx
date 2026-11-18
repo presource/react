@@ -1,5 +1,5 @@
 import { Meta } from '@storybook/react';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 import React from 'react';
 import { Button, ButtonProps } from '@reloaded/material';
 import { FlexRow } from '@reloaded/headless';

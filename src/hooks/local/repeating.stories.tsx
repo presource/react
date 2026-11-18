@@ -2,7 +2,7 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { HeadlessButton, HeadlessButtonProps } from '@reloaded/headless';
 import { useRepeatingHook, useStateHook } from '@presource/react';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 
 const record = {
     count: 0,

@@ -1,5 +1,5 @@
 import * as stories from './FunctionalButton.stories';
-import { storybookTestRunner } from '@library/test';
+import { storybookTestRunner } from '@presource/test';
 
 // These are standard storybook test.
 describe('FunctionalButton Interaction Test', () => {

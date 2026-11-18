@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
 import { Button } from '@reloaded/material';
 import { functionalComponent } from '@presource/react';
+import { $dom, asTestStory } from '@presource/test';
 import React from 'react';
 
 // You can build reactive button with functional component!
@@ -34,4 +35,9 @@ const meta: Meta = {
 export default meta;
 
 // Storybook
-export const FunctionalComponent = {};
+export const FunctionalComponent = asTestStory(async () => {
+    // Clicking runs the functional handler, which rewrites the label through
+    // the reactive props and must trigger a re-render.
+    await $dom.button('Click to Change Label').click();
+    await $dom.button('Label Changed').isValid();
+});

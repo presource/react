@@ -2,7 +2,7 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { HeadlessButton, HeadlessButtonProps } from '@reloaded/headless';
 import { useReferenceHook } from '@presource/react';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 import { expect } from 'storybook/test';
 
 const record = {

@@ -5,7 +5,7 @@ All imports from `@presource/react` — React hooks, context stores, and builder
 > **Last verified:** 2026-06-19
 > **Package name:** `@presource/react`
 > **Workspace dependencies:** `@presource/core` (used internally)
-> **Workspace consumers:** `@reloaded/headless`, `@reloaded/material`, `@reloaded/design`, `@library/workflow`, `@library/test`, `@reloaded/pages`
+> **Workspace consumers:** `@reloaded/headless`, `@reloaded/material`, `@reloaded/design`, `@library/workflow`, `@presource/test`, `@reloaded/pages`
 
 ---
 

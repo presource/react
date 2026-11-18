@@ -2,7 +2,7 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { HeadlessButton, HeadlessButtonProps } from '@reloaded/headless';
 import { useStateHook } from '@presource/react';
-import { $dom, asTestStory } from '@library/test';
+import { $dom, asTestStory } from '@presource/test';
 
 const meta: Meta = {
     title: 'Presource/React/Hook/State Hook',

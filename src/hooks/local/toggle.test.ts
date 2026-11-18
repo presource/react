@@ -1,4 +1,4 @@
-import { storybookTestRunner } from '@library/test';
+import { storybookTestRunner } from '@presource/test';
 import * as stories from './toggle.stories';
 
 describe('React ToggleHook Interaction Test', () => {
